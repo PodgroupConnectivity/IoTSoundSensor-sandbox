@@ -3,18 +3,25 @@
 #include <Losant.h>
 #include <my_credentials.h>
 
+
 float sound;
 float maximum;
 float minimum;
 float average;
 float Allvalue;
 int temp = 1;
+float P0 = 4540403.39793356;
+float P1 = -2695328.88406384;
+float P2 = 513679.63231002;
+float P3 = -16110.00641618;
+float MaxValue = 0;
+float window[] = {0,0,0,0,0};
 
 int valeur ;
 int sensor = A0;
 // WiFi credentials.
 const char* WIFI_SSID = WSSID;
-const char* WIFI_PASS = WPASS;
+const char* WIFI_PASS =  WPASS;
 
 // Losant credentials.
 const char* LOSANT_DEVICE_ID = DEVICE_ID;
@@ -24,7 +31,24 @@ WiFiClientSecure wifiClient;
 
 LosantDevice device(LOSANT_DEVICE_ID);
 
-
+void UpdateMax (float Value)
+{
+  MaxValue = 0;
+  for (int i = 4; i > 0; i--)
+  {
+    //Serial.print(i);
+    window[i]= window[i-1];
+  }
+  window[0] = Value;
+  
+  for (int a = 0;a < 5;a ++)
+  {
+    if (window[a]>MaxValue)
+    {
+      MaxValue = window[a];
+    }
+  }
+}
 
 void setup() 
 {
@@ -155,15 +179,15 @@ void Sampling(int Sample_D, int n_Sample, int Sleep_t, int Mode)
     int i = 0;
     for (i = 0; i < n_Sample ; i++)
     {
-      valeur = analogRead(sensor); // Reads the value from the Analog PIN A0
-      if (valeur < 3)
+      float OldvoltageValue;
+      OldvoltageValue =  analogRead(sensor)*(3.3/1024);
+      if (OldvoltageValue <= 0.039)
       {
-        sound = 32; 
+        OldvoltageValue = 0.039;
       }
-      else
-      {
-        sound = 20*log10(valeur*91.3670324 -220.0092); 
-      }
+      UpdateMax(OldvoltageValue);
+      sound = P0 * pow(MaxValue,3) + P1 * pow(MaxValue,2) + P2 * MaxValue + P3;
+      sound = 20*log10(sound);
     
       if(i == 0)
       {
@@ -204,7 +228,7 @@ void Sampling(int Sample_D, int n_Sample, int Sleep_t, int Mode)
     }
     report(maximum, minimum, average);
     delay(1000);  // to make sure that it is reported
-    ESP.deepSleep(Sleep_t); // going to sleep          
+    //ESP.deepSleep(Sleep_t); // going to sleep          
 }
 void loop() 
 {
