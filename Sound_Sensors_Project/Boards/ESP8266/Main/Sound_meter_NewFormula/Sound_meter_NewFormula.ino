@@ -52,7 +52,7 @@ const float P3 = -16110.00641618;
 
 // Find below a miscelanea of firmware parameters
 
-const int WiFiConnectionMaxTime = 10e6; // 10 seconds max trying to connect to WiFi before sleeping to retry later.
+const int WiFiConnectionMaxTime = 30000; // 30 seconds max trying to connect to WiFi before sleeping to retry later.
 const int SerialBaud = 9600; // Serial mode bauds for reporting.
 const int SerialDebugMode = 1; // 1 = Print all samples on Serial Monitor, 0 = Print only the calculated report (min, max, avg) on the Serial Monitor.
 
@@ -135,29 +135,30 @@ void setup()
 
   while (WiFi.status() != WL_CONNECTED)
   {
-    // Check to see if
-    if (WiFi.status() == WL_CONNECT_FAILED)
-    {
-      Serial.println("Failed to connect to WIFI. Please verify credentials: ");
-      Serial.println();
-      Serial.print("SSID: ");
-      Serial.println(WIFI_SSID);
-      Serial.print("Password: ");
-      Serial.println(WIFI_PASS);
-      Serial.println();
-    }
-
-    delay(500);
-    Serial.println("...");
-    // Only try for 5 seconds.
     if (millis() - wifiConnectStart > WiFiConnectionMaxTime)
     {
-      Serial.println("Failed to connect to WiFi");
-      Serial.println("Please attempt to send updated configuration parameters.");
-      return;
+      if (WiFi.status() == WL_CONNECT_FAILED)
+      {
+        Serial.println("Failed to connect to WIFI. Please verify credentials: ");
+        Serial.println();
+        Serial.print("SSID: ");
+        Serial.println(WIFI_SSID);
+        Serial.print("Password: ");
+        Serial.println(WIFI_PASS);
+        Serial.println();
+      }
 
+      Serial.println();
+      Serial.println("Failed to connect to WiFi. Putting device to sleep before retrying.");
+      Serial.println("Please check your WiFi configuration parameters as well.");
+      ESP.deepSleep(SleepTime); // going to sleep
+
+    } else {
+      delay(500);
+      Serial.println("...");
     }
   }
+
   Serial.println();
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
