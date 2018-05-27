@@ -200,12 +200,13 @@ void setup()
       {
         Serial.println("Unknown response from API");
       }
+      ESP.deepSleep(SleepTime); // going to sleep
     }
   }
   else
   {
     Serial.println("Failed to connect to Losant API.");
-
+    ESP.deepSleep(SleepTime); // going to sleep
   }
 
   http.end();
