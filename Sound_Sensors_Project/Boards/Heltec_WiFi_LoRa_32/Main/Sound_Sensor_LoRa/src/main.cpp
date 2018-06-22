@@ -23,7 +23,7 @@ const float P3 = -16110.00641618;
 
 // Parameters of sampling algorithm
 const int sample_delay = 1000;          // Delay between samples in ms
-const int N_samples = 15;               // Number of samples to take
+const int N_samples = 60;               // Number of samples to take
 
 // Vars for sound sampling
 int sensor = A0;                // Sensor to read data from
@@ -161,30 +161,31 @@ void report_data(osjob_t* j){
 
     // Var for sending the data
     // unsigned int of 8 bytes
-    static uint8_t message[7] = "";
+    // 21 = 6B * 3 float + 2 ';' + \0
+    // Init to {0,0,0...} important for the \0
+    static uint8_t message[21] = "";
 
     // Buffer for storing the data
     // var for intermediate conversion
-    char buffer[7];
+    char buffer[21] = "";
 
-    // Drawing
+    // Drawing & Reporting
     display.clear();
     display.drawString (0, 0, "report_data():");
     display.drawString (0, 50, "Sampling");
     display.display ();
 
-    // Calling sampling function to read
-    // sample and convert data from the sensor
     Serial.print("report_data(): OS Timestamp [");
     Serial.print(os_getTime());
     Serial.print("]: ");
     Serial.println("taking samples from sensor");
     
+    // Calling sampling function to read
+    // sample and convert data from the sensor
     sampling(sample_delay, N_samples);
 
-    // From average var to buffer with format
-    // [ 3 integer chipers, 2 fractionary chipers ]
-    sprintf(buffer, "%3.2f", average);
+    // From average var to buffer with CSV format
+    snprintf(buffer, sizeof buffer, "%3.2f;%3.2f;%3.2f", maximum, minimum, average);
 
     // From buffer to uint8_t array
     memcpy(message, buffer, sizeof(buffer));
@@ -206,10 +207,8 @@ void report_data(osjob_t* j){
         Serial.print("report_data(): OS Timestamp [");
         Serial.print(os_getTime());
         Serial.print("]: ");
-        Serial.print("uplink message: ");
-        Serial.print("average = ");
-        Serial.print(average);
-        Serial.println(" dBA");
+        Serial.print("uplink message payload : ");
+        Serial.println(buffer);
 
         // Drawing
         display.clear();
