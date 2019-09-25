@@ -26,19 +26,26 @@
 #include <SPI.h>
 #include <my_credentials.h>
 
+#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
+  // Required for Serial on Zero based boards
+  #define Serial SERIAL_PORT_USBVIRTUAL
+#endif
+
+
+
 // LoRaWAN NwkSKey, network session key
 // This is the default Semtech key, which is used by the prototype TTN
 // network initially.
-static const PROGMEM u1_t NWKSKEY[16] = NETSKEY;
+static const PROGMEM u1_t NWKSKEY[16] = { 0xE2, 0x96, 0xB6, 0x0F, 0x71, 0xD3, 0x72, 0x44, 0x57, 0x80, 0xBD, 0x5D, 0x79, 0x2D, 0x6C, 0x0D };
 
 // LoRaWAN AppSKey, application session key
 // This is the default Semtech key, which is used by the prototype TTN
 // network initially.
-static const u1_t PROGMEM APPSKEY[16] = APPSKEY;
+static const u1_t PROGMEM APPSKEY[16] = { 0xBD, 0x9B, 0x20, 0x21, 0x03, 0x09, 0x3F, 0xEA, 0x8F, 0x0F, 0x04, 0xC7, 0xC8, 0xF0, 0xB5, 0xA4 };
 
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
-static const u4_t DEVADDR = DEVADDR ; // <-- Change this address for every node!
+static const u4_t DEVADDR = DEVADDR; // <-- Change this address for every node!
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
@@ -54,13 +61,12 @@ static osjob_t sendjob;
 // cycle limitations).
 const unsigned TX_INTERVAL = 60;
 
-// Pin mapping
-const lmic_pinmap lmic_pins = 
-{
-    .nss = 8,  
+// Pin mapping for Adafruit Feather M0 LoRa
+const lmic_pinmap lmic_pins = {
+    .nss = 8,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 4,
-    .dio = {3,6,11},
+    .dio = {3, 6, LMIC_UNUSED_PIN}
 };
 
 void onEvent (ev_t ev) {
@@ -141,6 +147,10 @@ void do_send(osjob_t* j){
 }
 
 void setup() {
+
+   while (!Serial) {
+    delay(1);
+  }
     Serial.begin(115200);
     Serial.println(F("Starting"));
 
